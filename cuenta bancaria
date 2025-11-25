@@ -1,0 +1,86 @@
+// Estructura del laboratorio: com.poo.lab4
+public CajeroRunnable(CuentaBancaria cuenta, double monto, String usuario) {
+this.cuenta = cuenta;
+this.monto = monto;
+this.usuario = usuario;
+}
+
+
+@Override
+public void run() {
+cuenta.transaccion(monto, usuario);
+}
+}
+
+
+
+
+// =========================
+// Archivo: com/poo/lab4/app/MainBanco.java
+// =========================
+package com.poo.lab4.app;
+
+
+import com.poo.lab4.core.CuentaBancaria;
+import com.poo.lab4.workers.CajeroRunnable;
+
+
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
+
+
+public class MainBanco {
+public static void main(String[] args) {
+try {
+CuentaBancaria cuenta = new CuentaBancaria(1000);
+
+
+// Grupo de hilos (opcional pero recomendado por rúbrica)
+ThreadGroup grupo = new ThreadGroup("GrupoBanco");
+
+
+// Hilo VIP
+Thread vip = new Thread(grupo, new CajeroRunnable(cuenta, 500, "Cliente VIP"));
+vip.setPriority(Thread.MAX_PRIORITY);
+
+
+// Hilos normales
+Thread normal1 = new Thread(grupo, new CajeroRunnable(cuenta, -200, "Cliente Normal 1"));
+Thread normal2 = new Thread(grupo, new CajeroRunnable(cuenta, 300, "Cliente Normal 2"));
+normal1.setPriority(Thread.MIN_PRIORITY);
+normal2.setPriority(Thread.MIN_PRIORITY);
+
+
+// Inicio de hilos
+vip.start();
+normal1.start();
+normal2.start();
+
+
+// join() para esperar el cierre
+vip.join();
+normal1.join();
+normal2.join();
+
+
+// Persistencia binaria
+FileOutputStream fos = new FileOutputStream("balance_cierre.bin");
+DataOutputStream dos = new DataOutputStream(fos);
+
+
+dos.writeUTF("Saldo final del cierre bancario:");
+dos.writeDouble(cuenta.getSaldo());
+
+
+dos.close();
+fos.close();
+
+
+System.out.println("Archivo balance_cierre.bin generado correctamente.");
+
+
+} catch (Exception e) {
+e.printStackTrace();
+}
+}
+}
